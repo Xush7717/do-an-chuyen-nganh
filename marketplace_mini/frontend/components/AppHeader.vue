@@ -1,8 +1,8 @@
 <script setup lang="ts">
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 const router = useRouter()
 
-const cartItemCount = ref(3)
 const searchQuery = ref('')
 const isMenuOpen = ref(false)
 const isUserMenuOpen = ref(false)
@@ -45,8 +45,22 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-onMounted(() => {
+// Watch for authentication changes
+watch(() => authStore.isAuthenticated, async (isAuth, wasAuth) => {
+  if (isAuth && !wasAuth) {
+    // User just logged in, fetch cart
+    await cartStore.fetchCart()
+  } else if (!isAuth && wasAuth) {
+    // User just logged out, cart is already cleared in auth store
+  }
+})
+
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  // Fetch cart if user is authenticated
+  if (authStore.isAuthenticated) {
+    await cartStore.fetchCart()
+  }
 })
 
 onUnmounted(() => {
@@ -118,10 +132,10 @@ onUnmounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
             <span
-              v-if="cartItemCount > 0"
+              v-if="cartStore.count > 0"
               class="absolute top-0 right-0 bg-accent text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-sm border-2 border-white"
             >
-              {{ cartItemCount }}
+              {{ cartStore.count }}
             </span>
           </NuxtLink>
 

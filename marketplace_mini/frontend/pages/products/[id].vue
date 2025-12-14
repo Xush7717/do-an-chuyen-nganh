@@ -5,6 +5,7 @@ definePageMeta({
 
 // Get product ID from route params
 const route = useRoute()
+const router = useRouter()
 const productId = route.params.id as string
 
 // Fetch product details
@@ -27,6 +28,13 @@ try {
 // Extract product from response
 const product = computed(() => productData.value?.data)
 
+// Cart functionality
+const cartStore = useCartStore()
+const quantity = ref(1)
+const addingToCart = ref(false)
+const showSuccessMessage = ref(false)
+const addedQuantity = ref(0)
+
 // Helper computed properties
 const imageUrl = computed(() => {
   return product.value?.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop'
@@ -44,6 +52,44 @@ const inStock = computed(() => {
   return (product.value?.stock_quantity || 0) > 0
 })
 
+// Handle quantity change
+const incrementQuantity = () => {
+  if (quantity.value < (product.value?.stock_quantity || 0)) {
+    quantity.value++
+  }
+}
+
+const decrementQuantity = () => {
+  if (quantity.value > 1) {
+    quantity.value--
+  }
+}
+
+// Handle add to cart
+const handleAddToCart = async () => {
+  if (!product.value || addingToCart.value) return
+
+  addingToCart.value = true
+  addedQuantity.value = quantity.value
+
+  try {
+    await cartStore.addToCart({ id: product.value.id }, quantity.value)
+
+    // Show success message
+    showSuccessMessage.value = true
+    setTimeout(() => {
+      showSuccessMessage.value = false
+    }, 3000)
+
+    // Reset quantity to 1 after adding
+    quantity.value = 1
+  } catch (error) {
+    console.error('Failed to add to cart:', error)
+  } finally {
+    addingToCart.value = false
+  }
+}
+
 // Breadcrumb
 const breadcrumb = computed(() => [
   { label: 'Home', to: '/' },
@@ -54,7 +100,30 @@ const breadcrumb = computed(() => [
 
 <template>
   <div class="min-h-screen bg-slate-50">
-    <div class="container mx-auto px-4 py-8">
+    <div class="container mx-auto px-4 py-8 pt-16">
+      <!-- Success Notification -->
+      <transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="transform translate-y-2 opacity-0"
+        enter-to-class="transform translate-y-0 opacity-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="transform translate-y-0 opacity-100"
+        leave-to-class="transform translate-y-2 opacity-0"
+      >
+        <div
+          v-if="showSuccessMessage"
+          class="fixed top-24 right-4 z-50 bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md"
+        >
+          <svg class="h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p class="font-semibold">Added to cart!</p>
+            <p class="text-sm text-emerald-100">{{ addedQuantity }} {{ addedQuantity === 1 ? 'item' : 'items' }} added successfully</p>
+          </div>
+        </div>
+      </transition>
+
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-center items-center py-20">
         <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-violet-600"></div>
@@ -182,22 +251,58 @@ const breadcrumb = computed(() => [
               </div>
             </div>
 
+            <!-- Quantity Selector -->
+            <div v-if="inStock" class="space-y-3">
+              <label class="text-sm font-semibold text-gray-700">Quantity</label>
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3 bg-gray-100 rounded-xl p-2">
+                  <button
+                    @click="decrementQuantity"
+                    :disabled="quantity <= 1"
+                    class="w-10 h-10 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                    </svg>
+                  </button>
+                  <span class="w-16 text-center font-bold text-xl text-gray-900">{{ quantity }}</span>
+                  <button
+                    @click="incrementQuantity"
+                    :disabled="quantity >= product.stock_quantity"
+                    class="w-10 h-10 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                </div>
+                <span class="text-sm text-gray-500">
+                  {{ product.stock_quantity }} available
+                </span>
+              </div>
+            </div>
+
             <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-4 pt-4">
               <button
-                :disabled="!inStock"
+                @click="handleAddToCart"
+                :disabled="!inStock || addingToCart"
                 :class="[
                   'flex-1 font-semibold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg',
                   inStock
-                    ? 'bg-violet-600 hover:bg-violet-700 text-white hover:shadow-xl hover:scale-105'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 ]"
               >
                 <span class="flex items-center justify-center gap-2">
-                  <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg v-if="!addingToCart" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  {{ inStock ? 'Add to Cart' : 'Out of Stock' }}
+                  <svg v-else class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ addingToCart ? 'Adding to Cart...' : (inStock ? 'Add to Cart' : 'Out of Stock') }}
                 </span>
               </button>
 

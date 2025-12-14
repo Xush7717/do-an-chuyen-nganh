@@ -11,13 +11,13 @@ Build a vibrant, intuitive mini marketplace with Buyer and Seller portals using 
 
 ### Phase 1: Foundation & UI System
 **Goal**: Establish a "premium" and vivid look, set up layouts.
-- [ ] **Design System**:
+- [x] **Design System**:
     - Update `unocss.config.ts` with a new color palette (e.g., Primary: Violet/Indigo, Secondary: Teal/Cyan, Accent: Amber).
     - Define typography (Inter/Outfit).
-- [ ] **Layouts**:
+- [x] **Layouts**:
     - Refactor `AppHeader.vue` and `AppFooter.vue` to use the new design system.
     - Create `layouts/default.vue` (Buyer) and `layouts/seller.vue` (Seller).
-- [ ] **Home Page**:
+- [x] **Home Page**:
     - Create `pages/index.vue` with a Hero section, Featured Products, and Categories.
 
 ### Phase 2: Authentication (Buyer & Seller)

@@ -111,7 +111,7 @@ class ProductFactory extends Factory
             ],
         ];
 
-        $name = fake()->randomElement($productNames) . ' ' . fake()->numberBetween(1, 99);
+        $name = fake()->randomElement($productNames).' '.fake()->numberBetween(1, 99);
         $category = Category::inRandomOrder()->first();
         $categorySlug = $category?->slug ?? 'electronics';
 
@@ -123,7 +123,7 @@ class ProductFactory extends Factory
             'seller_id' => User::where('role', 'seller')->inRandomOrder()->first()?->id ?? User::factory()->seller(),
             'category_id' => $category?->id ?? Category::factory(),
             'name' => $name,
-            'slug' => Str::slug($name) . '-' . fake()->unique()->numberBetween(1000, 9999),
+            'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(1000, 9999),
             'description' => fake()->paragraphs(3, true),
             'price' => fake()->randomFloat(2, 9.99, 999.99),
             'stock_quantity' => fake()->numberBetween(0, 500),

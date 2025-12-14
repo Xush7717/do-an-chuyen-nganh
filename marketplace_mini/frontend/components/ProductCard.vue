@@ -5,6 +5,9 @@ const props = defineProps<{
   product: Product
 }>()
 
+const cartStore = useCartStore()
+const addingToCart = ref(false)
+
 // Helper computed properties for template
 const imageUrl = computed(() => {
   return props.product.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop'
@@ -18,6 +21,24 @@ const sellerName = computed(() => {
   // Try to get shop_name from seller.seller, fall back to seller.name
   return props.product.seller?.seller?.shop_name || props.product.seller?.name || 'Unknown Seller'
 })
+
+// Add to cart handler
+const handleAddToCart = async (event: MouseEvent) => {
+  // Prevent navigation to product page
+  event.preventDefault()
+  event.stopPropagation()
+
+  if (addingToCart.value) return
+
+  addingToCart.value = true
+  try {
+    await cartStore.addToCart({ id: props.product.id })
+  } catch (error) {
+    console.error('Failed to add to cart:', error)
+  } finally {
+    addingToCart.value = false
+  }
+}
 </script>
 
 <template>
@@ -56,8 +77,13 @@ const sellerName = computed(() => {
       </div>
 
       <!-- Add to Cart Button -->
-      <button class="mt-4 w-full bg-violet-600 hover:bg-#0D8152 text-white font-medium py-2.5 px-4 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg">
-        Add to Cart
+      <button
+        @click="handleAddToCart"
+        :disabled="addingToCart"
+        class="mt-4 w-full bg-violet-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span v-if="addingToCart">Adding...</span>
+        <span v-else>Add to Cart</span>
       </button>
     </div>
   </NuxtLink>

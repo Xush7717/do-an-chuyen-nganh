@@ -7,7 +7,6 @@ use App\Models\Product;
 use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {

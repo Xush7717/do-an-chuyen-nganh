@@ -55,6 +55,12 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = response.token
       user.value = response.user
 
+      // Fetch cart for buyer users
+      if (response.user.role === 'buyer') {
+        const cartStore = useCartStore()
+        await cartStore.fetchCart()
+      }
+
       // Redirect based on role
       if (response.user.role === 'admin') {
         await router.push('/admin/categories')
@@ -92,6 +98,12 @@ export const useAuthStore = defineStore('auth', () => {
 
       token.value = response.token
       user.value = response.user
+
+      // Fetch cart for buyer users
+      if (response.user.role === 'buyer') {
+        const cartStore = useCartStore()
+        await cartStore.fetchCart()
+      }
 
       // Redirect based on role
       if (response.user.role === 'admin') {
@@ -133,6 +145,11 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = null
       user.value = null
       loading.value = false
+
+      // Clear cart on logout
+      const cartStore = useCartStore()
+      cartStore.clearCart()
+
       await router.push('/')
     }
   }
