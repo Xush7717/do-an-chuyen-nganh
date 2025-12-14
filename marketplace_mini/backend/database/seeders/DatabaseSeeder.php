@@ -16,6 +16,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create admin user
+        User::factory()->create([
+            'name' => 'Admin User',
+            'email' => 'admin@marketmini.com',
+            'role' => 'admin',
+        ]);
+
         // Create test buyer user
         User::factory()->create([
             'name' => 'Test User',
@@ -51,13 +58,14 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // Create specific categories
+        // Create specific categories with icons
         $categories = [
-            ['name' => 'Electronics', 'slug' => 'electronics'],
-            ['name' => 'Fashion', 'slug' => 'fashion'],
-            ['name' => 'Home & Living', 'slug' => 'home-living'],
-            ['name' => 'Books', 'slug' => 'books'],
-            ['name' => 'Toys', 'slug' => 'toys'],
+            ['name' => 'Electronics', 'slug' => 'electronics', 'icon_class' => 'carbon:laptop'],
+            ['name' => 'Fashion', 'slug' => 'fashion', 'icon_class' => 'ph:t-shirt'],
+            ['name' => 'Home & Living', 'slug' => 'home-living', 'icon_class' => 'carbon:home'],
+            ['name' => 'Books', 'slug' => 'books', 'icon_class' => 'carbon:book'],
+            ['name' => 'Toys & Hobbies', 'slug' => 'toys-hobbies', 'icon_class' => 'carbon:game-console'],
+            ['name' => 'Beauty', 'slug' => 'beauty', 'icon_class' => 'carbon:face-activated'],
         ];
 
         foreach ($categories as $category) {

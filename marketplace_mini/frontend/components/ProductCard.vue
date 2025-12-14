@@ -33,7 +33,7 @@ const props = defineProps<{
 
     <!-- Product Info -->
     <div class="p-5">
-      <h3 class="font-semibold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-violet-600 transition-colors">
+      <h3 class="font-semibold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-yellow-700 transition-colors">
         {{ product.name }}
       </h3>
 
@@ -57,7 +57,7 @@ const props = defineProps<{
       </div>
 
       <!-- Add to Cart Button -->
-      <button class="mt-4 w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg">
+      <button class="mt-4 w-full bg-violet-600 hover:bg-#0D8152 text-white font-medium py-2.5 px-4 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg">
         Add to Cart
       </button>
     </div>

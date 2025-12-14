@@ -3,6 +3,7 @@ import {
   presetUno,
   presetAttributify,
   presetTypography,
+  presetIcons,
 } from 'unocss'
 
 export default defineConfig({
@@ -10,6 +11,10 @@ export default defineConfig({
     presetUno(),
     presetAttributify(),
     presetTypography(),
+    presetIcons({
+      scale: 1.2,
+      cdn: 'https://esm.sh/',
+    }),
   ],
   theme: {
     colors: {

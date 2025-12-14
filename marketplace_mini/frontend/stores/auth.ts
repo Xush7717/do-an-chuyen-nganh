@@ -4,7 +4,7 @@ interface User {
   id: number
   name: string
   email: string
-  role: 'buyer' | 'seller'
+  role: 'buyer' | 'seller' | 'admin'
   email_verified_at: string | null
   created_at: string
   updated_at: string
@@ -56,7 +56,9 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.user
 
       // Redirect based on role
-      if (response.user.role === 'seller') {
+      if (response.user.role === 'admin') {
+        await router.push('/admin/categories')
+      } else if (response.user.role === 'seller') {
         await router.push('/seller/dashboard')
       } else {
         await router.push('/')
@@ -92,7 +94,9 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.user
 
       // Redirect based on role
-      if (response.user.role === 'seller') {
+      if (response.user.role === 'admin') {
+        await router.push('/admin/categories')
+      } else if (response.user.role === 'seller') {
         await router.push('/seller/dashboard')
       } else {
         await router.push('/')
