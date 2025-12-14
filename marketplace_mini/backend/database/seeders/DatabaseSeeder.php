@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
             'user_id' => $testSeller->id,
             'shop_name' => 'TechPro Official',
             'description' => 'Your trusted source for premium tech products and gadgets. We offer the latest in technology with excellent customer service.',
-            'logo_url' => fake()->imageUrl(200, 200, 'business', true, 'TechPro'),
+            'logo_url' => 'https://images.unsplash.com/photo-1557683316-973673baf926?w=200&h=200&fit=crop',
         ]);
 
         // Create 4 additional seller users

@@ -1,17 +1,23 @@
 <script setup lang="ts">
-interface Product {
-  id: number
-  name: string
-  price: number
-  image: string
-  category: string
-  rating?: number
-  seller?: string
-}
+import type { Product } from '~/types'
 
 const props = defineProps<{
   product: Product
 }>()
+
+// Helper computed properties for template
+const imageUrl = computed(() => {
+  return props.product.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop'
+})
+
+const categoryName = computed(() => {
+  return props.product.category?.name || 'General'
+})
+
+const sellerName = computed(() => {
+  // Try to get shop_name from seller.seller, fall back to seller.name
+  return props.product.seller?.seller?.shop_name || props.product.seller?.name || 'Unknown Seller'
+})
 </script>
 
 <template>
@@ -22,12 +28,12 @@ const props = defineProps<{
     <!-- Product Image -->
     <div class="relative aspect-square overflow-hidden bg-slate-100">
       <img
-        :src="product.image"
+        :src="imageUrl"
         :alt="product.name"
         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
       >
       <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-violet-600">
-        {{ product.category }}
+        {{ categoryName }}
       </div>
     </div>
 
@@ -37,22 +43,15 @@ const props = defineProps<{
         {{ product.name }}
       </h3>
 
-      <div v-if="product.seller" class="text-sm text-gray-500 mb-3">
-        by {{ product.seller }}
+      <div class="text-sm text-gray-500 mb-3">
+        by {{ sellerName }}
       </div>
 
       <div class="flex items-center justify-between">
         <div class="flex flex-col">
           <span class="text-2xl font-bold text-gray-900">
-            ${{ product.price.toFixed(2) }}
+            ${{ Number(product.price).toFixed(2) }}
           </span>
-        </div>
-
-        <div v-if="product.rating" class="flex items-center gap-1">
-          <svg class="h-5 w-5 text-amber-400 fill-current" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-          <span class="text-sm font-medium text-gray-700">{{ product.rating }}</span>
         </div>
       </div>
 

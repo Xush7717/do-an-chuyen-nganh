@@ -17,7 +17,16 @@ const toggleUserMenu = () => {
 }
 
 const handleSearch = () => {
-  console.log('Search:', searchQuery.value)
+  const query = searchQuery.value.trim()
+  if (query) {
+    // Navigate to products page with search query
+    router.push({
+      path: '/products',
+      query: { search: query }
+    })
+    // Close mobile menu if open
+    isMenuOpen.value = false
+  }
 }
 
 const logout = async () => {

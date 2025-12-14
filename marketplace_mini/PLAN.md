@@ -35,15 +35,15 @@ Build a vibrant, intuitive mini marketplace with Buyer and Seller portals using 
 
 ### Phase 3: Catalog & Search
 **Goal**: Browse and find products.
-- [ ] **Backend**:
+- [x] **Backend**:
     - `Product` model & migration.
     - `ProductController` (index, show).
     - Search/Filter logic (price, category).
-- [ ] **Frontend**:
+- [x] **Frontend**:
     - `pages/products/index.vue` (Grid view with filters).
     - `pages/products/[id].vue` (Product details).
     - Product Card component.
-- [ ] **Testing**:
+- [x] **Testing**:
     - Test pagination and filters.
     - Verify empty states.
 

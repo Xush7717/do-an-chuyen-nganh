@@ -3,92 +3,33 @@ definePageMeta({
   layout: 'default',
 })
 
-// Dummy product data
-const products = ref([
-  {
-    id: 1,
-    name: 'Premium Wireless Headphones',
-    price: 299.99,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
-    category: 'Electronics',
-    rating: 4.8,
-    seller: 'TechPro Official',
-  },
-  {
-    id: 2,
-    name: 'Minimalist Leather Wallet',
-    price: 79.99,
-    image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=500&h=500&fit=crop',
-    category: 'Fashion',
-    rating: 4.9,
-    seller: 'StyleCraft',
-  },
-  {
-    id: 3,
-    name: 'Smart Watch Pro Series',
-    price: 399.99,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop',
-    category: 'Electronics',
-    rating: 4.7,
-    seller: 'TechPro Official',
-  },
-  {
-    id: 4,
-    name: 'Organic Cotton T-Shirt',
-    price: 49.99,
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500&h=500&fit=crop',
-    category: 'Fashion',
-    rating: 4.6,
-    seller: 'EcoWear',
-  },
-  {
-    id: 5,
-    name: 'Mechanical Keyboard RGB',
-    price: 159.99,
-    image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&h=500&fit=crop',
-    category: 'Electronics',
-    rating: 4.9,
-    seller: 'Digital Dreams',
-  },
-  {
-    id: 6,
-    name: 'Designer Sunglasses',
-    price: 189.99,
-    image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500&h=500&fit=crop',
-    category: 'Fashion',
-    rating: 4.8,
-    seller: 'StyleCraft',
-  },
-  {
-    id: 7,
-    name: 'Portable Speaker Bluetooth',
-    price: 129.99,
-    image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500&h=500&fit=crop',
-    category: 'Electronics',
-    rating: 4.7,
-    seller: 'TechPro Official',
-  },
-  {
-    id: 8,
-    name: 'Canvas Backpack Premium',
-    price: 99.99,
-    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&h=500&fit=crop',
-    category: 'Fashion',
-    rating: 4.9,
-    seller: 'Modern Essentials',
-  },
-])
+const router = useRouter()
 
-// Fetch categories from API
-const config = useRuntimeConfig()
-const { data: categoriesData, pending: categoriesLoading } = await useFetch<{ data: any[] }>(
-  `${config.public.apiBase}/categories`
-)
+// Fetch categories from API using service composable
+const { getAll } = useCategoryService()
+const { data: categoriesData, pending: categoriesLoading } = await getAll()
 
 // Limit to 6 categories for home page display
 const displayedCategories = computed(() => {
   return categoriesData.value?.data?.slice(0, 6) || []
 })
+
+// Fetch featured products from API (top 8 newest)
+const { getFeatured } = useProductService()
+const { data: productsData, pending: productsLoading } = await getFeatured()
+
+// Extract products array from response
+const products = computed(() => {
+  return productsData.value?.data || []
+})
+
+// Navigate to products page with category filter
+const navigateToCategory = (categoryId: number) => {
+  router.push({
+    path: '/products',
+    query: { category_id: categoryId.toString() }
+  })
+}
 </script>
 
 <template>
@@ -217,7 +158,8 @@ const displayedCategories = computed(() => {
           <div
             v-for="category in displayedCategories"
             :key="category.id"
-            class="group bg-white rounded-2xl p-6 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer border border-gray-100"
+            class="group bg-white rounded-2xl p-6 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer border border-gray-100 select-none"
+            @click="navigateToCategory(category.id)"
           >
             <div class="flex flex-col items-center text-center space-y-3">
               <Icon
@@ -237,8 +179,8 @@ const displayedCategories = computed(() => {
       <div class="container mx-auto px-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
           <div>
-            <h2 class="text-4xl font-bold text-gray-900 mb-2">New Arrivals</h2>
-            <p class="text-lg text-gray-600">Discover our latest products</p>
+            <h2 class="text-4xl font-bold text-gray-900 mb-2">Trending Finds from Top Sellers</h2>
+            <p class="text-lg text-gray-600">Explore fresh picks from our verified marketplace sellers</p>
           </div>
           <NuxtLink
             to="/products"
@@ -251,7 +193,13 @@ const displayedCategories = computed(() => {
           </NuxtLink>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Loading State -->
+        <div v-if="productsLoading" class="flex justify-center items-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+        </div>
+
+        <!-- Products Grid -->
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <ProductCard
             v-for="product in products"
             :key="product.id"
