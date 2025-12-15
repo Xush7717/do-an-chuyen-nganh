@@ -12,7 +12,7 @@
   "dependencies": {
     "@iconify/vue": "^5.0.0",
     "@pinia/nuxt": "0.5.4",
-    "@stripe/stripe-js": "^8.5.2",
+    "@stripe/stripe-js": "^8.5.3",
     "@unocss/nuxt": "0.59.4",
     "axios": "^1.7.0",
     "nuxt": "3.11.2",

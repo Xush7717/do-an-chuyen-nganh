@@ -49,15 +49,15 @@ Build a vibrant, intuitive mini marketplace with Buyer and Seller portals using 
 
 ### Phase 4: Cart & Checkout
 **Goal**: Purchase flow.
-- [ ] **Backend**:
+- [x] **Backend**:
     - `Cart` logic (session or DB).
     - `Order` model & migration.
     - Stripe Payment Intent API.
-- [ ] **Frontend**:
+- [x] **Frontend**:
     - `stores/cart.ts` (Add/Remove/Update).
     - `pages/cart.vue`.
     - `pages/checkout.vue` (Stripe Elements integration).
-- [ ] **Testing**:
+- [x] **Testing**:
     - Verify total calculation.
     - Test successful/failed payment flows.
 

@@ -108,3 +108,89 @@ export interface ProductFilters {
   page?: number
   limit?: number
 }
+
+/**
+ * Payment entity type
+ */
+export interface Payment {
+  id: number
+  order_id: number
+  amount: number
+  gateway: string
+  transaction_id: string
+  status: 'pending' | 'succeeded' | 'failed'
+  created_at?: string
+  updated_at?: string
+}
+
+/**
+ * Order Item entity type
+ */
+export interface OrderItem {
+  id: number
+  order_id: number
+  product_id: number
+  product_name: string
+  quantity: number
+  price_at_purchase: number
+  product?: Product
+}
+
+/**
+ * Shipping Address type (decoded from JSON)
+ */
+export interface ShippingAddress {
+  name: string
+  phone: string
+  address: string
+  city: string
+}
+
+/**
+ * Order entity type
+ */
+export interface Order {
+  id: number
+  user_id: number
+  coupon_id?: number
+  status: string
+  total_amount: number
+  discount_amount: number
+  final_amount: number
+  shipping_address: string | ShippingAddress
+  created_at?: string
+  updated_at?: string
+  // Relationships
+  order_items?: OrderItem[]
+  payment?: Payment
+}
+
+/**
+ * API Response wrapper for single order
+ */
+export interface OrderResponse {
+  success: boolean
+  data: Order
+}
+
+/**
+ * API Response wrapper for paginated orders
+ */
+export interface OrdersResponse {
+  success: boolean
+  data: {
+    data: Order[]
+    current_page: number
+    first_page_url: string
+    from: number
+    last_page: number
+    last_page_url: string
+    links: PaginationLinkItem[]
+    next_page_url: string | null
+    path: string
+    per_page: number
+    prev_page_url: string | null
+    to: number
+    total: number
+  }
+}

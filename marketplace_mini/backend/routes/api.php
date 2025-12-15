@@ -4,6 +4,8 @@ use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +35,18 @@ Route::middleware('auth:sanctum')->prefix('cart')->group(function () {
     Route::post('/items', [CartController::class, 'store']);
     Route::put('/items/{itemId}', [CartController::class, 'update']);
     Route::delete('/items/{itemId}', [CartController::class, 'destroy']);
+});
+
+// Checkout routes (protected)
+Route::middleware('auth:sanctum')->prefix('checkout')->group(function () {
+    Route::post('/intent', [CheckoutController::class, 'createPaymentIntent']);
+    Route::post('/place-order', [CheckoutController::class, 'placeOrder']);
+});
+
+// Order routes (protected)
+Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
+    Route::get('/', [OrderController::class, 'index']);
+    Route::get('/{id}', [OrderController::class, 'show']);
 });
 
 // Admin routes
