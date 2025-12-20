@@ -63,15 +63,15 @@ Build a vibrant, intuitive mini marketplace with Buyer and Seller portals using 
 
 ### Phase 5: Seller Portal
 **Goal**: Manage products.
-- [ ] **Backend**:
+- [X] **Backend**:
     - Seller middleware.
     - Product CRUD APIs (create, update, delete).
     - Image upload handling.
-- [ ] **Frontend**:
+- [X] **Frontend**:
     - `pages/seller/dashboard.vue`.
     - `pages/seller/products/create.vue`.
     - `pages/seller/orders.vue`.
-- [ ] **Testing**:
+- [X] **Testing**:
     - Verify unauthorized access is blocked.
     - Test image upload constraints.
 

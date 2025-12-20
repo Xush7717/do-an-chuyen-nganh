@@ -189,14 +189,33 @@ class CheckoutController extends Controller
                     'shipping_address' => $shippingAddress,
                 ]);
 
-                // Move cart items to order items
+                // Move cart items to order items and decrement stock
                 foreach ($cart->cartItems as $cartItem) {
+                    $product = $cartItem->product;
+
+                    // Safety check: Ensure sufficient stock
+                    if ($product->stock_quantity < $cartItem->quantity) {
+                        throw new \Exception(
+                            "Insufficient stock for product '{$product->name}'. Available: {$product->stock_quantity}, Requested: {$cartItem->quantity}"
+                        );
+                    }
+
+                    // Decrement product stock
+                    $product->decrement('stock_quantity', $cartItem->quantity);
+
+                    Log::info('Stock decremented', [
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'quantity_sold' => $cartItem->quantity,
+                        'remaining_stock' => $product->fresh()->stock_quantity,
+                    ]);
+
                     OrderItem::create([
                         'order_id' => $order->id,
                         'product_id' => $cartItem->product_id,
-                        'product_name' => $cartItem->product->name,
+                        'product_name' => $product->name,
                         'quantity' => $cartItem->quantity,
-                        'price_at_purchase' => $cartItem->product->price,
+                        'price_at_purchase' => $product->price,
                     ]);
                 }
 

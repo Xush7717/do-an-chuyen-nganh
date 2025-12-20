@@ -26,6 +26,32 @@ class Product extends Model
         'price' => 'decimal:2',
     ];
 
+    /**
+     * Accessor to transform image_url to full URL
+     * - External URLs (http/https): Return as-is
+     * - Local paths: Prepend backend URL
+     */
+    public function getImageUrlAttribute($value)
+    {
+        if (! $value) {
+            return null;
+        }
+
+        // If already a full URL (external), return as-is
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        // Local path: Transform to full URL
+        // If path starts with /storage/, use it directly
+        // Otherwise, prepend /storage/
+        if (str_starts_with($value, '/storage/')) {
+            return asset($value);
+        }
+
+        return asset('storage/'.$value);
+    }
+
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');

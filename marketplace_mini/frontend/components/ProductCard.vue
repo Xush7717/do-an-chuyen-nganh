@@ -8,11 +8,11 @@ const props = defineProps<{
 const cartStore = useCartStore()
 const addingToCart = ref(false)
 
-// Helper computed properties for template
-const imageUrl = computed(() => {
-  return props.product.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop'
-})
+// Image state management
+const imageUrl = ref(props.product.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop')
+const imageLoadError = ref(false)
 
+// Helper computed properties for template
 const categoryName = computed(() => {
   return props.product.category?.name || 'General'
 })
@@ -21,6 +21,14 @@ const sellerName = computed(() => {
   // Try to get shop_name from seller.seller, fall back to seller.name
   return props.product.seller?.seller?.shop_name || props.product.seller?.name || 'Unknown Seller'
 })
+
+// Handle image load error
+const handleImageError = () => {
+  if (!imageLoadError.value) {
+    imageLoadError.value = true
+    imageUrl.value = 'https://via.placeholder.com/640x480/e2e8f0/64748b?text=No+Image'
+  }
+}
 
 // Add to cart handler
 const handleAddToCart = async (event: MouseEvent) => {
@@ -51,6 +59,7 @@ const handleAddToCart = async (event: MouseEvent) => {
       <img
         :src="imageUrl"
         :alt="product.name"
+        @error="handleImageError"
         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
       >
       <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-violet-600">

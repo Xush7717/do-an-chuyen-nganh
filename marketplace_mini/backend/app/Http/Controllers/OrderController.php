@@ -17,7 +17,10 @@ class OrderController extends Controller
             $user = $request->user();
 
             $orders = Order::where('user_id', $user->id)
-                ->with(['orderItems.product', 'payment'])
+                ->with([
+                    'orderItems.product:id,name,image_url',
+                    'payment',
+                ])
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
 
@@ -41,7 +44,10 @@ class OrderController extends Controller
         try {
             $user = $request->user();
 
-            $order = Order::with(['orderItems.product', 'payment'])
+            $order = Order::with([
+                    'orderItems.product:id,name,image_url',
+                    'payment',
+                ])
                 ->find($id);
 
             if (! $order) {

@@ -7,6 +7,8 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Seller\OrderController as SellerOrderController;
+use App\Http\Controllers\Seller\ProductController as SellerProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -52,4 +54,13 @@ Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
 // Admin routes
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::apiResource('categories', AdminCategoryController::class);
+});
+
+// Seller routes
+Route::prefix('seller')->middleware(['auth:sanctum', 'seller'])->group(function () {
+    Route::get('/stats', [SellerOrderController::class, 'stats']);
+    Route::apiResource('products', SellerProductController::class);
+    Route::get('/orders', [SellerOrderController::class, 'index']);
+    Route::get('/orders/{id}', [SellerOrderController::class, 'show']);
+    Route::patch('/orders/{id}/status', [SellerOrderController::class, 'updateStatus']);
 });
