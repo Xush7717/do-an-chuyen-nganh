@@ -5,8 +5,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Seller\CouponController as SellerCouponController;
 use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
 use Illuminate\Http\Request;
@@ -30,6 +33,17 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
+
+// Review routes
+Route::get('/products/{productId}/reviews', [ReviewController::class, 'index']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/reviews', [ReviewController::class, 'store']);
+    Route::get('/products/{productId}/can-review', [ReviewController::class, 'canReview']);
+});
+
+// Coupon routes
+Route::post('/coupons/available', [CouponController::class, 'available']);
+Route::post('/coupons/apply', [CouponController::class, 'apply']);
 
 // Cart routes (protected)
 Route::middleware('auth:sanctum')->prefix('cart')->group(function () {
@@ -63,4 +77,7 @@ Route::prefix('seller')->middleware(['auth:sanctum', 'seller'])->group(function 
     Route::get('/orders', [SellerOrderController::class, 'index']);
     Route::get('/orders/{id}', [SellerOrderController::class, 'show']);
     Route::patch('/orders/{id}/status', [SellerOrderController::class, 'updateStatus']);
+    Route::get('/coupons', [SellerCouponController::class, 'index']);
+    Route::post('/coupons', [SellerCouponController::class, 'store']);
+    Route::delete('/coupons/{id}', [SellerCouponController::class, 'destroy']);
 });

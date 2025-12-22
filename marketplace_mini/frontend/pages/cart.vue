@@ -5,11 +5,18 @@ definePageMeta({
 
 const cartStore = useCartStore()
 const router = useRouter()
+const config = useRuntimeConfig()
+
+// Coupon modal state
+const showCouponModal = ref(false)
+const applyingCoupon = ref(false)
 
 // Tax calculation (dummy - 10%)
 const taxRate = 0.10
-const tax = computed(() => cartStore.totalAmount * taxRate)
-const total = computed(() => cartStore.totalAmount + tax.value)
+const subtotal = computed(() => cartStore.subtotal)
+const discount = computed(() => cartStore.totalDiscount)
+const tax = computed(() => (subtotal.value - discount.value) * taxRate)
+const total = computed(() => subtotal.value - discount.value + tax.value)
 
 // Fetch cart on mount
 onMounted(async () => {
@@ -33,6 +40,59 @@ const removeItem = async (itemId: number) => {
   } catch (error) {
     console.error('Failed to remove item:', error)
   }
+}
+
+// Handle coupon application from modal
+const handleApplyCoupon = async (code: string, sellerId: number, sellerName: string) => {
+  applyingCoupon.value = true
+  try {
+    const cartItems = cartStore.items.map(item => ({
+      product_id: item.product.id,
+      quantity: item.quantity
+    }))
+
+    const response = await $fetch<any>(`${config.public.apiBase}/coupons/apply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: {
+        code: code,
+        cart_items: cartItems
+      }
+    })
+
+    // Store coupon in cart store
+    cartStore.applyCoupon({
+      code: response.coupon.code,
+      discountAmount: response.coupon.discount_amount,
+      type: response.coupon.type,
+      value: response.coupon.value,
+      sellerId: response.coupon.seller_id,
+      sellerName: sellerName
+    })
+
+    alert(`Coupon ${code} applied successfully!`)
+  } catch (error: any) {
+    alert(error?.data?.message || 'Failed to apply coupon')
+  } finally {
+    applyingCoupon.value = false
+  }
+}
+
+// Remove specific coupon
+const removeCoupon = (code: string) => {
+  cartStore.removeCoupon(code)
+}
+
+// Open coupon modal
+const openCouponModal = () => {
+  showCouponModal.value = true
+}
+
+// Close coupon modal
+const closeCouponModal = () => {
+  showCouponModal.value = false
 }
 
 // Navigate to checkout
@@ -181,10 +241,62 @@ const continueShopping = () => {
           <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 sticky top-28">
             <h2 class="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
 
+            <!-- Coupon Section -->
+            <div class="mb-6">
+              <div class="flex items-center justify-between mb-3">
+                <label class="block text-sm font-medium text-gray-700">Coupons</label>
+                <button
+                  @click="openCouponModal"
+                  class="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                >
+                  {{ cartStore.appliedCoupons.length > 0 ? 'Manage Coupons' : '+ Add Coupon' }}
+                </button>
+              </div>
+
+              <!-- Applied Coupons List -->
+              <div v-if="cartStore.appliedCoupons.length > 0" class="space-y-2">
+                <div
+                  v-for="coupon in cartStore.appliedCoupons"
+                  :key="coupon.code"
+                  class="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono font-semibold text-emerald-800 text-sm">{{ coupon.code }}</span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                        {{ coupon.type === 'percentage' ? `${coupon.value}%` : `$${coupon.value}` }}
+                      </span>
+                    </div>
+                    <div class="text-xs text-emerald-600 mt-0.5">
+                      {{ coupon.sellerName || `Seller #${coupon.sellerId}` }} • -${{ coupon.discountAmount.toFixed(2) }}
+                    </div>
+                  </div>
+                  <button
+                    @click="() => removeCoupon(coupon.code)"
+                    class="text-red-600 hover:text-red-700 p-1 ml-2"
+                    title="Remove coupon"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div v-else class="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-3 text-center">
+                No coupons applied. Click "Add Coupon" to browse available deals!
+              </div>
+            </div>
+
             <div class="space-y-4 mb-6">
               <div class="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span class="font-semibold text-gray-900">${{ cartStore.totalAmount.toFixed(2) }}</span>
+                <span class="font-semibold text-gray-900">${{ subtotal.toFixed(2) }}</span>
+              </div>
+              <div v-if="discount > 0" class="flex justify-between text-emerald-600">
+                <span>Discount</span>
+                <span class="font-semibold">-${{ discount.toFixed(2) }}</span>
               </div>
               <div class="flex justify-between text-gray-600">
                 <span>Tax (10%)</span>
@@ -232,5 +344,12 @@ const continueShopping = () => {
         </div>
       </div>
     </div>
+
+    <!-- Coupon Selection Modal -->
+    <CartCouponModal
+      :show="showCouponModal"
+      @close="closeCouponModal"
+      @apply="handleApplyCoupon"
+    />
   </div>
 </template>

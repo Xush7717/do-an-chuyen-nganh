@@ -329,8 +329,13 @@ const breadcrumb = computed(() => [
           </div>
         </div>
 
+        <!-- Product Reviews Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <ProductReviews :product-id="Number(productId)" />
+        </div>
+
         <!-- Back to Products Button -->
-        <div class="text-center">
+        <div class="text-center mt-8">
           <NuxtLink
             to="/products"
             class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-700 font-semibold transition-colors no-underline"

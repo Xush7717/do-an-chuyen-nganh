@@ -40,8 +40,10 @@ const formErrors = reactive({
 
 // Tax calculation (10%)
 const taxRate = 0.10
-const tax = computed(() => cartStore.totalAmount * taxRate)
-const total = computed(() => cartStore.totalAmount + tax.value)
+const subtotal = computed(() => cartStore.subtotal)
+const discount = computed(() => cartStore.totalDiscount)
+const tax = computed(() => (subtotal.value - discount.value) * taxRate)
+const total = computed(() => subtotal.value - discount.value + tax.value)
 
 // Initialize Stripe and fetch payment intent
 onMounted(async () => {
@@ -89,6 +91,10 @@ onMounted(async () => {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: {
+        coupon_codes: cartStore.appliedCoupons.map(c => c.code),
       },
     })
 
@@ -258,9 +264,11 @@ const handleSubmit = async () => {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${authStore.token}`,
+            'Content-Type': 'application/json',
           },
           body: {
             payment_intent_id: paymentIntent.id,
+            coupon_codes: cartStore.appliedCoupons.map(c => c.code),
             shipping_address: {
               name: shippingForm.name,
               phone: shippingForm.phone,
@@ -460,8 +468,24 @@ const handleSubmit = async () => {
             <div class="space-y-3 mb-6 pt-4 border-t border-gray-200">
               <div class="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span class="font-semibold text-gray-900">${{ cartStore.totalAmount.toFixed(2) }}</span>
+                <span class="font-semibold text-gray-900">${{ subtotal.toFixed(2) }}</span>
               </div>
+
+              <!-- Multiple Coupons Display -->
+              <div v-if="cartStore.appliedCoupons.length > 0" class="space-y-2">
+                <div
+                  v-for="coupon in cartStore.appliedCoupons"
+                  :key="coupon.code"
+                  class="flex justify-between text-emerald-600"
+                >
+                  <div class="flex items-center gap-2">
+                    <span>Discount</span>
+                    <span class="text-xs font-mono bg-emerald-100 px-2 py-0.5 rounded">{{ coupon.code }}</span>
+                  </div>
+                  <span class="font-semibold">-${{ coupon.discountAmount.toFixed(2) }}</span>
+                </div>
+              </div>
+
               <div class="flex justify-between text-gray-600">
                 <span>Tax (10%)</span>
                 <span class="font-semibold text-gray-900">${{ tax.toFixed(2) }}</span>

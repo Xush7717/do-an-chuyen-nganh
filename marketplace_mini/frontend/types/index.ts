@@ -134,6 +134,7 @@ export interface OrderItem {
   quantity: number
   price_at_purchase: number
   product?: Product
+  is_reviewed?: boolean // Added by backend for delivered orders
 }
 
 /**

@@ -23,6 +23,7 @@ class OrderController extends Controller
         // Get orders that contain at least one item from this seller
         $orders = Order::with([
             'user:id,name,email',
+            'coupon:id,code,type,value,seller_id',
             'orderItems' => function ($query) use ($sellerProductIds) {
                 // Only load items that belong to this seller
                 $query->whereIn('product_id', $sellerProductIds)
@@ -52,6 +53,7 @@ class OrderController extends Controller
 
         $order = Order::with([
             'user:id,name,email',
+            'coupon:id,code,type,value,seller_id',
             'orderItems' => function ($query) use ($sellerProductIds) {
                 $query->whereIn('product_id', $sellerProductIds)
                     ->with('product:id,name,image_url');
@@ -123,6 +125,7 @@ class OrderController extends Controller
         // Reload order with relationships
         $order->load([
             'user:id,name,email',
+            'coupon:id,code,type,value,seller_id',
             'orderItems' => function ($query) use ($sellerProductIds) {
                 $query->whereIn('product_id', $sellerProductIds)
                     ->with('product:id,name,image_url');

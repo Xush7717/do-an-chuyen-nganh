@@ -142,6 +142,16 @@ onMounted(() => {
             </svg>
             <span class="text-sm font-medium text-gray-700">View Orders</span>
           </NuxtLink>
+
+          <NuxtLink
+            to="/seller/coupons"
+            class="flex items-center gap-3 p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-orange-500 hover:bg-orange-50 transition-colors"
+          >
+            <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+            </svg>
+            <span class="text-sm font-medium text-gray-700">Manage Coupons</span>
+          </NuxtLink>
         </div>
       </div>
 

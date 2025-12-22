@@ -24,6 +24,7 @@ const handleSearch = () => {
       path: '/products',
       query: { search: query }
     })
+    //searchQuery.value = "";
     // Close mobile menu if open
     isMenuOpen.value = false
   }

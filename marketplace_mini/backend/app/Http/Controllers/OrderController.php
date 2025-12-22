@@ -65,6 +65,13 @@ class OrderController extends Controller
                 ], 403);
             }
 
+            // Add is_reviewed flag to each order item
+            $order->orderItems->each(function ($item) use ($user) {
+                $item->is_reviewed = \App\Models\Review::where('user_id', $user->id)
+                    ->where('product_id', $item->product_id)
+                    ->exists();
+            });
+
             return response()->json([
                 'success' => true,
                 'data' => $order,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cart;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -42,14 +43,105 @@ class CheckoutController extends Controller
                 ], 400);
             }
 
-            // Calculate total amount from cart items
-            $totalAmount = 0;
+            // Calculate subtotal from cart items
+            $subtotal = 0;
             foreach ($cart->cartItems as $cartItem) {
-                $totalAmount += $cartItem->product->price * $cartItem->quantity;
+                $subtotal += $cartItem->product->price * $cartItem->quantity;
             }
 
+            // Handle multiple coupons (one per seller)
+            $couponCodes = $request->input('coupon_codes', []);
+            $totalDiscount = 0;
+            $couponDetails = [];
+            $appliedSellerIds = [];
+
+            if (! empty($couponCodes)) {
+                // Get products for seller mapping
+                $products = \App\Models\Product::whereIn('id', $cart->cartItems->pluck('product_id'))->get()->keyBy('id');
+
+                foreach ($couponCodes as $couponCode) {
+                    $coupon = Coupon::where('code', strtoupper($couponCode))->first();
+
+                    if (! $coupon) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Invalid coupon code: {$couponCode}",
+                        ], 400);
+                    }
+
+                    // Validate coupon
+                    if ($coupon->expires_at && $coupon->expires_at->isPast()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Coupon {$couponCode} has expired",
+                        ], 400);
+                    }
+
+                    if ($coupon->usage_limit && $coupon->usage_count >= $coupon->usage_limit) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Coupon {$couponCode} has reached its usage limit",
+                        ], 400);
+                    }
+
+                    // Check for duplicate seller coupons
+                    if (in_array($coupon->seller_id, $appliedSellerIds)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Only one coupon per seller is allowed',
+                        ], 400);
+                    }
+
+                    // Calculate seller subtotal
+                    $sellerSubtotal = 0;
+                    foreach ($cart->cartItems as $cartItem) {
+                        $product = $products->get($cartItem->product_id);
+                        if ($product && $product->seller_id == $coupon->seller_id) {
+                            $sellerSubtotal += $product->price * $cartItem->quantity;
+                        }
+                    }
+
+                    if ($sellerSubtotal == 0) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Coupon {$couponCode} does not apply to any items in your cart",
+                        ], 400);
+                    }
+
+                    if ($sellerSubtotal < $coupon->min_order_value) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Coupon {$couponCode} requires minimum order value of $".$coupon->min_order_value,
+                        ], 400);
+                    }
+
+                    // Calculate discount for this seller
+                    $discountAmount = 0;
+                    if ($coupon->type === 'percentage') {
+                        $discountAmount = ($sellerSubtotal * $coupon->value) / 100;
+                    } else {
+                        $discountAmount = min($coupon->value, $sellerSubtotal);
+                    }
+
+                    $totalDiscount += $discountAmount;
+                    $appliedSellerIds[] = $coupon->seller_id;
+                    $couponDetails[] = [
+                        'id' => $coupon->id,
+                        'code' => $coupon->code,
+                        'seller_id' => $coupon->seller_id,
+                        'discount' => $discountAmount,
+                    ];
+                }
+            }
+
+            // Calculate final amount with tax
+            $taxRate = 0.10; // 10% tax rate
+            $amountAfterDiscount = $subtotal - $totalDiscount;
+            $taxAmount = $amountAfterDiscount * $taxRate;
+            $finalAmount = $amountAfterDiscount + $taxAmount;
+
             // Stripe requires amount in cents (smallest currency unit)
-            $amountInCents = (int) ($totalAmount * 100);
+            $amountInCents = (int) ($finalAmount * 100);
 
             // Create PaymentIntent
             $paymentIntent = PaymentIntent::create([
@@ -58,6 +150,9 @@ class CheckoutController extends Controller
                 'metadata' => [
                     'user_id' => $user->id,
                     'cart_id' => $cart->id,
+                    'discount_amount' => $totalDiscount,
+                    'tax_amount' => $taxAmount,
+                    'coupons' => json_encode($couponDetails),
                 ],
                 'automatic_payment_methods' => [
                     'enabled' => true,
@@ -68,7 +163,7 @@ class CheckoutController extends Controller
                 'success' => true,
                 'data' => [
                     'clientSecret' => $paymentIntent->client_secret,
-                    'amount' => $totalAmount,
+                    'amount' => $finalAmount,
                 ],
             ]);
         } catch (ApiErrorException $e) {
@@ -97,6 +192,8 @@ class CheckoutController extends Controller
             // Validate request
             $validated = $request->validate([
                 'payment_intent_id' => 'required|string',
+                'coupon_codes' => 'nullable|array',
+                'coupon_codes.*' => 'string',
                 'shipping_address' => 'required|array',
                 'shipping_address.name' => 'required|string|max:255',
                 'shipping_address.phone' => 'required|string|max:20',
@@ -156,13 +253,32 @@ class CheckoutController extends Controller
             DB::beginTransaction();
 
             try {
-                // Calculate totals
-                $totalAmount = 0;
+                // Calculate subtotal
+                $subtotal = 0;
                 foreach ($cart->cartItems as $cartItem) {
                     if (! $cartItem->product) {
                         throw new \Exception("Product not found for cart item ID: {$cartItem->id}");
                     }
-                    $totalAmount += $cartItem->product->price * $cartItem->quantity;
+                    $subtotal += $cartItem->product->price * $cartItem->quantity;
+                }
+
+                // Get coupon data from PaymentIntent metadata
+                $discountAmount = $paymentIntent->metadata->discount_amount ?? 0;
+                $taxAmount = $paymentIntent->metadata->tax_amount ?? 0;
+                $couponsData = json_decode($paymentIntent->metadata->coupons ?? '[]', true);
+                $finalAmount = $subtotal - $discountAmount + $taxAmount;
+
+                // Increment usage count for all applied coupons
+                foreach ($couponsData as $couponData) {
+                    $coupon = Coupon::find($couponData['id']);
+                    if ($coupon) {
+                        $coupon->increment('usage_count');
+                        Log::info('Coupon usage incremented', [
+                            'coupon_id' => $coupon->id,
+                            'code' => $coupon->code,
+                            'new_usage_count' => $coupon->fresh()->usage_count,
+                        ]);
+                    }
                 }
 
                 // Format shipping address as JSON string
@@ -174,18 +290,23 @@ class CheckoutController extends Controller
 
                 Log::info('Creating order', [
                     'user_id' => $user->id,
-                    'total_amount' => $totalAmount,
+                    'subtotal' => $subtotal,
+                    'discount_amount' => $discountAmount,
+                    'final_amount' => $finalAmount,
                     'cart_items_count' => $cart->cartItems->count(),
                 ]);
 
-                // Create Order
+                // Create Order (store first coupon ID for backward compatibility)
+                $firstCouponId = ! empty($couponsData) ? $couponsData[0]['id'] : null;
+
                 $order = Order::create([
                     'user_id' => $user->id,
-                    'coupon_id' => null,
+                    'coupon_id' => $firstCouponId,
                     'status' => 'processing',
-                    'total_amount' => $totalAmount,
-                    'discount_amount' => 0.00,
-                    'final_amount' => $totalAmount,
+                    'total_amount' => $subtotal,
+                    'discount_amount' => $discountAmount,
+                    'tax_amount' => $taxAmount,
+                    'final_amount' => $finalAmount,
                     'shipping_address' => $shippingAddress,
                 ]);
 
@@ -222,7 +343,7 @@ class CheckoutController extends Controller
                 // Create Payment record
                 Payment::create([
                     'order_id' => $order->id,
-                    'amount' => $totalAmount,
+                    'amount' => $finalAmount,
                     'gateway' => 'stripe',
                     'transaction_id' => $validated['payment_intent_id'],
                     'status' => 'succeeded',
@@ -245,7 +366,9 @@ class CheckoutController extends Controller
                     'data' => [
                         'order_id' => $order->id,
                         'order_number' => $order->id,
-                        'total_amount' => $totalAmount,
+                        'total_amount' => $subtotal,
+                        'discount_amount' => $discountAmount,
+                        'final_amount' => $finalAmount,
                     ],
                 ], 201);
             } catch (\Exception $e) {

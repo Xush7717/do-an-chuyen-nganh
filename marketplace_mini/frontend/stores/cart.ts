@@ -17,6 +17,15 @@ interface CartItem {
   product: CartProduct
 }
 
+interface AppliedCoupon {
+  code: string
+  discountAmount: number
+  type: 'percentage' | 'fixed'
+  value: number
+  sellerId: number
+  sellerName?: string
+}
+
 export const useCartStore = defineStore('cart', () => {
   const config = useRuntimeConfig()
   const router = useRouter()
@@ -26,6 +35,7 @@ export const useCartStore = defineStore('cart', () => {
   const loading = ref(false) // For initial fetch
   const updating = ref(false) // For update/remove operations
   const error = ref<string | null>(null)
+  const appliedCoupons = ref<AppliedCoupon[]>([])
 
   /**
    * Computed: Number of distinct products in cart
@@ -35,12 +45,37 @@ export const useCartStore = defineStore('cart', () => {
   })
 
   /**
-   * Computed: Total amount of all items
+   * Computed: Subtotal (before discount)
    */
-  const totalAmount = computed(() => {
+  const subtotal = computed(() => {
     return items.value.reduce((total, item) => {
       return total + (item.product.price * item.quantity)
     }, 0)
+  })
+
+  /**
+   * Computed: Total discount from all applied coupons
+   */
+  const totalDiscount = computed(() => {
+    return appliedCoupons.value.reduce((total, coupon) => {
+      return total + coupon.discountAmount
+    }, 0)
+  })
+
+  /**
+   * Computed: Total amount (after all discounts)
+   */
+  const totalAmount = computed(() => {
+    return Math.max(0, subtotal.value - totalDiscount.value)
+  })
+
+  /**
+   * Helper: Find coupon by seller ID
+   */
+  const couponBySeller = computed(() => {
+    return (sellerId: number) => {
+      return appliedCoupons.value.find(c => c.sellerId === sellerId)
+    }
   })
 
   /**
@@ -192,6 +227,36 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   /**
+   * Apply coupon to cart (replaces existing coupon for same seller)
+   */
+  function applyCoupon(couponData: AppliedCoupon) {
+    // Remove existing coupon for this seller if any
+    const existingIndex = appliedCoupons.value.findIndex(c => c.sellerId === couponData.sellerId)
+    if (existingIndex !== -1) {
+      appliedCoupons.value.splice(existingIndex, 1)
+    }
+    // Add new coupon
+    appliedCoupons.value.push(couponData)
+  }
+
+  /**
+   * Remove applied coupon by code
+   */
+  function removeCoupon(code: string) {
+    const index = appliedCoupons.value.findIndex(c => c.code === code)
+    if (index !== -1) {
+      appliedCoupons.value.splice(index, 1)
+    }
+  }
+
+  /**
+   * Remove all applied coupons
+   */
+  function clearCoupons() {
+    appliedCoupons.value = []
+  }
+
+  /**
    * Clear error
    */
   function clearError() {
@@ -203,6 +268,7 @@ export const useCartStore = defineStore('cart', () => {
    */
   function clearCart() {
     items.value = []
+    appliedCoupons.value = []
   }
 
   return {
@@ -210,12 +276,19 @@ export const useCartStore = defineStore('cart', () => {
     loading,
     updating,
     error,
+    appliedCoupons,
     count,
+    subtotal,
+    totalDiscount,
     totalAmount,
+    couponBySeller,
     fetchCart,
     addToCart,
     updateQuantity,
     removeItem,
+    applyCoupon,
+    removeCoupon,
+    clearCoupons,
     clearError,
     clearCart,
   }

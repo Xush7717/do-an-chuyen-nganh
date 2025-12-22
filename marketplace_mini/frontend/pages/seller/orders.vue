@@ -129,11 +129,26 @@ const getStatusColor = (status: string) => {
   return colors[status] || 'bg-gray-100 text-gray-800'
 }
 
-// Calculate total for seller's items in an order
-const getSellerTotal = (orderItems: any[]) => {
-  return orderItems.reduce((sum, item) => {
+// Calculate total for seller's items in an order (accounting for discounts)
+const getSellerTotal = (order: any) => {
+  const orderItems = order.order_items
+
+  // Calculate subtotal for seller's items
+  const sellerSubtotal = orderItems.reduce((sum: number, item: any) => {
     return sum + (item.quantity * item.price_at_purchase)
   }, 0)
+
+  // If there's a discount on the order, apply it proportionally
+  if (order.discount_amount && order.discount_amount > 0 && order.total_amount > 0) {
+    // Calculate discount percentage
+    const discountPercentage = order.discount_amount / order.total_amount
+
+    // Apply proportional discount to seller's items
+    const sellerDiscount = sellerSubtotal * discountPercentage
+    return sellerSubtotal - sellerDiscount
+  }
+
+  return sellerSubtotal
 }
 
 // Load orders on mount
@@ -232,7 +247,7 @@ onMounted(() => {
                 <div class="text-right">
                   <p class="text-sm text-gray-600">Your earnings</p>
                   <p class="text-xl font-bold text-emerald-600">
-                    {{ formatPrice(getSellerTotal(order.order_items)) }}
+                    {{ formatPrice(getSellerTotal(order)) }}
                   </p>
                 </div>
                 <svg
@@ -299,6 +314,47 @@ onMounted(() => {
                   <p class="font-semibold text-gray-900">
                     {{ formatPrice(item.quantity * item.price_at_purchase) }}
                   </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Order Summary for Seller -->
+            <div class="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+              <h5 class="font-semibold text-gray-900 mb-4">Order Summary</h5>
+              <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">Subtotal (Your Items)</span>
+                  <span class="font-semibold text-gray-900">
+                    {{ formatPrice(order.order_items.reduce((sum: number, item: any) => sum + (item.quantity * item.price_at_purchase), 0)) }}
+                  </span>
+                </div>
+
+                <!-- Show discount if applicable to this seller -->
+                <div v-if="order.coupon && order.discount_amount > 0" class="flex justify-between text-sm">
+                  <div class="flex items-center gap-2">
+                    <span class="text-gray-600">Discount</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                      {{ order.coupon.code }}
+                    </span>
+                    <span v-if="order.coupon.type === 'percentage'" class="text-xs text-gray-500">
+                      ({{ order.coupon.value }}% off)
+                    </span>
+                    <span v-else class="text-xs text-gray-500">
+                      (${{ order.coupon.value }} off)
+                    </span>
+                  </div>
+                  <span class="font-semibold text-emerald-600">
+                    -{{ formatPrice(order.discount_amount * (order.order_items.reduce((sum: number, item: any) => sum + (item.quantity * item.price_at_purchase), 0) / order.total_amount)) }}
+                  </span>
+                </div>
+
+                <div class="pt-3 border-t border-gray-200">
+                  <div class="flex justify-between">
+                    <span class="font-bold text-gray-900">Your Earnings</span>
+                    <span class="font-bold text-emerald-600 text-lg">
+                      {{ formatPrice(getSellerTotal(order)) }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,20 +1,85 @@
 <script setup lang="ts">
 import type { ShippingAddress } from '~/types'
 
+// Type definitions
+interface ReviewProduct {
+  id: number
+  name: string
+  image_url?: string
+}
+
 definePageMeta({
   middleware: 'auth',
 })
 
 const route = useRoute()
 const orderId = route.params.id as string
+const authStore = useAuthStore()
 
 const { getOrderDetails } = useOrderService()
 
 // Fetch order details
-const { data: orderResponse, pending, error } = await getOrderDetails(orderId)
+const { data: orderResponse, pending, error, refresh } = await getOrderDetails(orderId)
 
 // Extract order from response
 const order = computed(() => orderResponse.value?.data)
+
+// Review modal state
+const showReviewModal = ref(false)
+const selectedProduct = ref<ReviewProduct | null>(null)
+const submittingReview = ref(false)
+const reviewForm = ref({
+  rating: 5,
+  comment: ''
+})
+
+// Open review modal
+const openReviewModal = (product: ReviewProduct) => {
+  selectedProduct.value = product
+  reviewForm.value = { rating: 5, comment: '' }
+  showReviewModal.value = true
+}
+
+// Close review modal
+const closeReviewModal = () => {
+  showReviewModal.value = false
+  selectedProduct.value = null
+  reviewForm.value = { rating: 5, comment: '' }
+}
+
+// Submit review
+const submitReview = async () => {
+  if (!selectedProduct.value) return
+
+  submittingReview.value = true
+  try {
+    await $fetch('http://127.0.0.1:8000/api/reviews', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: {
+        product_id: selectedProduct.value.id,
+        rating: reviewForm.value.rating,
+        comment: reviewForm.value.comment
+      }
+    })
+
+    // Close modal
+    closeReviewModal()
+
+    // Refresh order data to update is_reviewed flags
+    await refresh()
+
+    // Show success message
+    alert('Review submitted successfully!')
+  } catch (error: any) {
+    alert(error?.data?.message || 'Failed to submit review')
+  } finally {
+    submittingReview.value = false
+  }
+}
 
 // Parse shipping address
 const shippingAddress = computed(() => {
@@ -132,18 +197,22 @@ const goBack = () => {
           </div>
 
           <!-- Order Summary Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="bg-slate-50 rounded-xl p-4">
-              <p class="text-sm text-gray-500 mb-1">Total Amount</p>
+              <p class="text-sm text-gray-500 mb-1">Subtotal</p>
               <p class="text-2xl font-bold text-gray-900">{{ formatCurrency(order.total_amount) }}</p>
             </div>
             <div class="bg-slate-50 rounded-xl p-4">
               <p class="text-sm text-gray-500 mb-1">Discount</p>
-              <p class="text-2xl font-bold text-gray-900">{{ formatCurrency(order.discount_amount) }}</p>
+              <p class="text-2xl font-bold text-emerald-600">-{{ formatCurrency(order.discount_amount) }}</p>
             </div>
-            <div class="bg-#FFBA81  rounded-xl p-4">
-              <p class="text-sm text-#853C00 mb-1">Final Amount</p>
-              <p class="text-2xl font-bold text-#853C00">{{ formatCurrency(order.final_amount) }}</p>
+            <div class="bg-slate-50 rounded-xl p-4">
+              <p class="text-sm text-gray-500 mb-1">Tax (10%)</p>
+              <p class="text-2xl font-bold text-gray-900">{{ formatCurrency(order.tax_amount || 0) }}</p>
+            </div>
+            <div class="bg-orange-100 rounded-xl p-4">
+              <p class="text-sm text-orange-900 mb-1">Final Amount</p>
+              <p class="text-2xl font-bold text-orange-900">{{ formatCurrency(order.final_amount) }}</p>
             </div>
           </div>
         </div>
@@ -183,6 +252,29 @@ const goBack = () => {
                     <h3 class="font-semibold text-gray-900 mb-1">{{ item.product_name }}</h3>
                     <p class="text-sm text-gray-600">Quantity: {{ item.quantity }}</p>
                     <p class="text-sm text-gray-600">Price: {{ formatCurrency(item.price_at_purchase) }}</p>
+
+                    <!-- Review Button (Only show if order is delivered and not reviewed) -->
+                    <div v-if="order.status === 'delivered'" class="mt-3">
+                      <button
+                        v-if="!item.is_reviewed"
+                        @click="openReviewModal({ id: item.product_id, name: item.product_name, image_url: item.product?.image_url })"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors text-sm font-medium"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                        Write Review
+                      </button>
+                      <span
+                        v-else
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium"
+                      >
+                        <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        Reviewed
+                      </span>
+                    </div>
                   </div>
 
                   <!-- Item Total -->
@@ -258,6 +350,77 @@ const goBack = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div
+      v-if="showReviewModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      @click.self="closeReviewModal"
+    >
+      <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-bold text-gray-900">Write Your Review</h3>
+          <button
+            @click="closeReviewModal"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div v-if="selectedProduct" class="mb-4 p-3 bg-slate-50 rounded-lg">
+          <p class="font-semibold text-gray-900">{{ selectedProduct.name }}</p>
+        </div>
+
+        <!-- Rating -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+          <div class="flex gap-1">
+            <button
+              v-for="star in 5"
+              :key="star"
+              @click="reviewForm.rating = star"
+              type="button"
+              class="text-3xl transition-colors"
+              :class="star <= reviewForm.rating ? 'text-yellow-500' : 'text-slate-300'"
+            >
+              ★
+            </button>
+          </div>
+        </div>
+
+        <!-- Comment -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Comment</label>
+          <textarea
+            v-model="reviewForm.comment"
+            rows="4"
+            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            placeholder="Share your experience with this product..."
+          ></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <button
+            @click="submitReview"
+            :disabled="submittingReview"
+            class="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {{ submittingReview ? 'Submitting...' : 'Submit Review' }}
+          </button>
+          <button
+            @click="closeReviewModal"
+            :disabled="submittingReview"
+            class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 disabled:opacity-50 font-medium"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>

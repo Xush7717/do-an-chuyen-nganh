@@ -26,6 +26,11 @@ class Product extends Model
         'price' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'average_rating',
+        'review_count',
+    ];
+
     /**
      * Accessor to transform image_url to full URL
      * - External URLs (http/https): Return as-is
@@ -75,5 +80,15 @@ class Product extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function getAverageRatingAttribute(): float
+    {
+        return round((float) $this->reviews()->avg('rating') ?? 0.0, 1);
+    }
+
+    public function getReviewCountAttribute(): int
+    {
+        return $this->reviews()->count();
     }
 }

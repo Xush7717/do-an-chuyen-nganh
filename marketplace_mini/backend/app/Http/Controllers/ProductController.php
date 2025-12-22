@@ -29,6 +29,9 @@ class ProductController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
+                    //orWhereHas cho bang ben ngoaiorWhereHas('seller', function ($q_seller) use ($search) {
+                    // Giả sử cột tên người bán trong database là 'name'
+                    //$q_seller->where('name', 'like', "%{$search}%");
             });
         }
 

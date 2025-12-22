@@ -18,6 +18,7 @@ class Order extends Model
         'status',
         'total_amount',
         'discount_amount',
+        'tax_amount',
         'final_amount',
         'shipping_address',
     ];
@@ -25,6 +26,7 @@ class Order extends Model
     protected $casts = [
         'total_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
         'final_amount' => 'decimal:2',
     ];
 
