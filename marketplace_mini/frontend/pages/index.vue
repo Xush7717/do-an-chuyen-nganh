@@ -34,7 +34,7 @@ const navigateToCategory = (categoryId: number) => {
 
 <template>
   <div class="min-h-screen">
-    <!-- Hero Section (High Contrast Mode) -->
+    <!-- Hero Section -->
     <section class="bg-slate-900 text-white py-20 lg:py-28">
       <div class="container mx-auto px-4">
         <div class="grid lg:grid-cols-2 gap-12 items-center">

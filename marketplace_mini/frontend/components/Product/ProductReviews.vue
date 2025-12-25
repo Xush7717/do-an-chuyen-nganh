@@ -79,7 +79,7 @@ const renderStars = (rating: number) => {
         <p class="text-blue-800 text-sm">
           <strong>Note:</strong> You can write a review for this product from your
           <NuxtLink to="/profile/orders" class="font-semibold underline hover:text-blue-900">Order History</NuxtLink>
-          after your order has been delivered.
+          page after purchasing it.
         </p>
       </div>
     </div>

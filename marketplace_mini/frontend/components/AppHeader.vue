@@ -112,7 +112,7 @@ onUnmounted(() => {
 
         <!-- Actions -->
         <div class="flex items-center gap-2 md:gap-6">
-          <!-- Sell Button -->
+          <!-- Sell Button
           <NuxtLink
             to="/sell"
             class="hidden md:flex items-center gap-2 text-gray-600 hover:text-primary font-medium transition-colors no-underline"
@@ -121,7 +121,7 @@ onUnmounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             Sell
-          </NuxtLink>
+          </NuxtLink> -->
 
           <!-- Cart -->
           <NuxtLink

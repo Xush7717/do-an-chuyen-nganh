@@ -146,8 +146,8 @@ const clearFilters = () => {
         <aside class="lg:col-span-1">
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sticky top-24">
             <!-- Header with Clear Button -->
-            <div class="mb-5 pb-4 border-b border-gray-200">
-              <div class="flex items-center justify-between mb-3">
+            <div class="mb-2 pb-4 border-b border-gray-200">
+              <div class="flex items-center justify-between ">
                 <h2 class="text-lg font-bold text-gray-900">Filters</h2>
                 <button
                   @click="clearFilters"

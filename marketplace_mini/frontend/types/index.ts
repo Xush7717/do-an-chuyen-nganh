@@ -158,6 +158,7 @@ export interface Order {
   total_amount: number
   discount_amount: number
   final_amount: number
+  tax_amount: number
   shipping_address: string | ShippingAddress
   created_at?: string
   updated_at?: string

@@ -48,7 +48,7 @@ const closeReviewModal = () => {
 }
 
 // Submit review
-const submitReview = async () => {
+const submitReview = async (): Promise<void> => {
   if (!selectedProduct.value) return
 
   submittingReview.value = true

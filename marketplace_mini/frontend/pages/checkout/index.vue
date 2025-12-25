@@ -39,7 +39,7 @@ const formErrors = reactive({
 })
 
 // Tax calculation (10%)
-const taxRate = 0.10
+const taxRate = 0.0
 const subtotal = computed(() => cartStore.subtotal)
 const discount = computed(() => cartStore.totalDiscount)
 const tax = computed(() => (subtotal.value - discount.value) * taxRate)

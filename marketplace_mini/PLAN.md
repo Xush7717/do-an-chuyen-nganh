@@ -77,13 +77,13 @@ Build a vibrant, intuitive mini marketplace with Buyer and Seller portals using 
 
 ### Phase 6: Reviews & Coupons
 **Goal**: Engagement and retention.
-- [ ] **Backend**:
+- [x] **Backend**:
     - `Review` model.
     - `Coupon` model and validation logic.
-- [ ] **Frontend**:
+- [x] **Frontend**:
     - Review section in Product Details.
     - Coupon input in Checkout.
-- [ ] **Testing**:
+- [x] **Testing**:
     - Verify coupon validity and expiration.
 
 ## Verification Plan
