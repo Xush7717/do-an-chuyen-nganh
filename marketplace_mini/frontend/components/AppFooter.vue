@@ -45,10 +45,10 @@ const subscribeToNewsletter = () => {
         <div>
           <h3 class="text-white font-display font-bold text-lg mb-6">Discover</h3>
           <ul class="space-y-4">
-            <li><NuxtLink to="/new-arrivals" class="text-slate-400 hover:text-primary transition-colors no-underline">New Arrivals</NuxtLink></li>
-            <li><NuxtLink to="/featured" class="text-slate-400 hover:text-primary transition-colors no-underline">Featured</NuxtLink></li>
-            <li><NuxtLink to="/collections" class="text-slate-400 hover:text-primary transition-colors no-underline">Collections</NuxtLink></li>
-            <li><NuxtLink to="/stores" class="text-slate-400 hover:text-primary transition-colors no-underline">Stores</NuxtLink></li>
+            <li><NuxtLink to="" class="text-slate-400 hover:text-primary transition-colors no-underline">New Arrivals</NuxtLink></li>
+            <li><NuxtLink to="" class="text-slate-400 hover:text-primary transition-colors no-underline">Featured</NuxtLink></li>
+            <li><NuxtLink to="" class="text-slate-400 hover:text-primary transition-colors no-underline">Collections</NuxtLink></li>
+            <li><NuxtLink to="" class="text-slate-400 hover:text-primary transition-colors no-underline">Stores</NuxtLink></li>
           </ul>
         </div>
 
@@ -56,10 +56,10 @@ const subscribeToNewsletter = () => {
         <div>
           <h3 class="text-white font-display font-bold text-lg mb-6">Support</h3>
           <ul class="space-y-4">
-            <li><NuxtLink to="/help" class="text-slate-400 hover:text-primary transition-colors no-underline">Help Center</NuxtLink></li>
-            <li><NuxtLink to="/shipping" class="text-slate-400 hover:text-primary transition-colors no-underline">Shipping & Returns</NuxtLink></li>
-            <li><NuxtLink to="/contact" class="text-slate-400 hover:text-primary transition-colors no-underline">Contact Us</NuxtLink></li>
-            <li><NuxtLink to="/sell" class="text-slate-400 hover:text-primary transition-colors no-underline">Start Selling</NuxtLink></li>
+            <li><NuxtLink to="" class="text-slate-400 hover:text-primary transition-colors no-underline">Help Center</NuxtLink></li>
+            <li><NuxtLink to="" class="text-slate-400 hover:text-primary transition-colors no-underline">Shipping & Returns</NuxtLink></li>
+            <li><NuxtLink to="" class="text-slate-400 hover:text-primary transition-colors no-underline">Contact Us</NuxtLink></li>
+            <li><NuxtLink to="" class="text-slate-400 hover:text-primary transition-colors no-underline">Start Selling</NuxtLink></li>
           </ul>
         </div>
 
@@ -91,8 +91,8 @@ const subscribeToNewsletter = () => {
           © {{ new Date().getFullYear() }} MarketMini. All rights reserved.
         </p>
         <div class="flex items-center gap-6 text-sm">
-          <NuxtLink to="/privacy" class="text-slate-500 hover:text-primary transition-colors no-underline">Privacy Policy</NuxtLink>
-          <NuxtLink to="/terms" class="text-slate-500 hover:text-primary transition-colors no-underline">Terms of Service</NuxtLink>
+          <NuxtLink to="" class="text-slate-500 hover:text-primary transition-colors no-underline">Privacy Policy</NuxtLink>
+          <NuxtLink to="" class="text-slate-500 hover:text-primary transition-colors no-underline">Terms of Service</NuxtLink>
         </div>
       </div>
     </div>

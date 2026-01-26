@@ -21,18 +21,31 @@ class CartController extends Controller
 
         // Load cart items with product details
         $cartItems = $cart->cartItems()
-            ->with(['product.category', 'product.seller'])
+            ->with(['product.category', 'product.seller', 'productVariant'])
             ->get()
             ->map(function ($item) {
+                $price = $item->product->price;
+                $imageUrl = $item->product->image_url;
+                $variantInfo = null;
+
+                // If item has variant, use variant-specific data
+                if ($item->product_variant_id && $item->productVariant) {
+                    $price = $item->productVariant->price;
+                    $imageUrl = $item->productVariant->image_url ?? $item->product->image_url;
+                    $variantInfo = $item->variant_attributes;
+                }
+
                 return [
                     'id' => $item->id,
                     'product_id' => $item->product_id,
+                    'product_variant_id' => $item->product_variant_id,
+                    'variant_attributes' => $variantInfo,
                     'quantity' => $item->quantity,
                     'product' => [
                         'id' => $item->product->id,
                         'name' => $item->product->name,
-                        'price' => $item->product->price,
-                        'image_url' => $item->product->image_url,
+                        'price' => $price,
+                        'image_url' => $imageUrl,
                         'category' => $item->product->category->name ?? null,
                         'seller' => $item->product->seller->name ?? null,
                     ],
@@ -52,20 +65,31 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
+            'product_variant_id' => 'nullable|exists:product_variants,id',
+            'variant_attributes' => 'nullable|array',
             'quantity' => 'sometimes|integer|min:1',
         ]);
 
         $user = $request->user();
         $productId = $request->input('product_id');
+        $variantId = $request->input('product_variant_id');
+        $variantAttributes = $request->input('variant_attributes');
         $quantity = $request->input('quantity', 1);
 
         // Get or create cart for user
         $cart = Cart::firstOrCreate(['user_id' => $user->id]);
 
-        // Check if item already exists in cart
-        $cartItem = CartItem::where('cart_id', $cart->id)
-            ->where('product_id', $productId)
-            ->first();
+        // Check if item already exists in cart (match both product_id and variant_id)
+        $query = CartItem::where('cart_id', $cart->id)
+            ->where('product_id', $productId);
+
+        if ($variantId) {
+            $query->where('product_variant_id', $variantId);
+        } else {
+            $query->whereNull('product_variant_id');
+        }
+
+        $cartItem = $query->first();
 
         if ($cartItem) {
             // Item exists, increment quantity
@@ -76,12 +100,14 @@ class CartController extends Controller
             $cartItem = CartItem::create([
                 'cart_id' => $cart->id,
                 'product_id' => $productId,
+                'product_variant_id' => $variantId,
+                'variant_attributes' => $variantAttributes,
                 'quantity' => $quantity,
             ]);
         }
 
         // Load product details
-        $cartItem->load('product');
+        $cartItem->load(['product', 'productVariant']);
 
         return response()->json([
             'success' => true,
@@ -89,6 +115,8 @@ class CartController extends Controller
             'data' => [
                 'id' => $cartItem->id,
                 'product_id' => $cartItem->product_id,
+                'product_variant_id' => $cartItem->product_variant_id,
+                'variant_attributes' => $cartItem->variant_attributes,
                 'quantity' => $cartItem->quantity,
             ],
         ], 201);

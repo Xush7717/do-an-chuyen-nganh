@@ -50,7 +50,7 @@ class CouponController extends Controller
             $validated['cart_items']
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'message' => $result['message'],
             ], 422);

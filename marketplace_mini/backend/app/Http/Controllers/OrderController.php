@@ -45,9 +45,9 @@ class OrderController extends Controller
             $user = $request->user();
 
             $order = Order::with([
-                    'orderItems.product:id,name,image_url',
-                    'payment',
-                ])
+                'orderItems.product:id,name,image_url',
+                'payment',
+            ])
                 ->find($id);
 
             if (! $order) {

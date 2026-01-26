@@ -28,6 +28,73 @@ try {
 // Extract product from response
 const product = computed(() => productData.value?.data)
 
+// Variant management
+const selectedVariant = ref<any>(null)
+const selectedOptions = ref<Record<string, string>>({})
+
+// Check if product has variants
+const hasVariants = computed(() => {
+  return product.value?.has_variants && product.value?.variants?.length > 0
+})
+
+// Get available options (e.g., ["Color", "Size"])
+const availableOptions = computed(() => {
+  if (!hasVariants.value || !product.value?.options) return []
+  return product.value.options
+})
+
+// Find matching variant based on selected options
+const findMatchingVariant = () => {
+  if (!hasVariants.value || !product.value?.variants) return null
+
+  const optionsCount = availableOptions.value.length
+  const selectedCount = Object.keys(selectedOptions.value).length
+
+  // Only search if all options are selected
+  if (selectedCount !== optionsCount) return null
+
+  return product.value.variants.find((variant: any) => {
+    return availableOptions.value.every((option: any) => {
+      return variant.attributes[option.name] === selectedOptions.value[option.name]
+    })
+  })
+}
+
+// Watch for option changes and update selected variant
+watch(selectedOptions, () => {
+  selectedVariant.value = findMatchingVariant()
+}, { deep: true })
+
+// Current price (variant or product)
+const currentPrice = computed(() => {
+  if (hasVariants.value && selectedVariant.value) {
+    return selectedVariant.value.price
+  }
+  return product.value?.price
+})
+
+// Current stock (variant or product)
+const currentStock = computed(() => {
+  if (hasVariants.value && selectedVariant.value) {
+    return selectedVariant.value.stock_quantity
+  }
+  return product.value?.stock_quantity || 0
+})
+
+// Current image (variant or product)
+const currentImage = computed(() => {
+  if (hasVariants.value && selectedVariant.value?.image_url) {
+    return selectedVariant.value.image_url
+  }
+  return product.value?.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop'
+})
+
+// Check if all variant options are selected
+const allOptionsSelected = computed(() => {
+  if (!hasVariants.value) return true
+  return Object.keys(selectedOptions.value).length === availableOptions.value.length
+})
+
 // Cart functionality
 const cartStore = useCartStore()
 const quantity = ref(1)
@@ -37,7 +104,7 @@ const addedQuantity = ref(0)
 
 // Helper computed properties
 const imageUrl = computed(() => {
-  return product.value?.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop'
+  return currentImage.value
 })
 
 const sellerName = computed(() => {
@@ -49,12 +116,12 @@ const categoryName = computed(() => {
 })
 
 const inStock = computed(() => {
-  return (product.value?.stock_quantity || 0) > 0
+  return currentStock.value > 0
 })
 
 // Handle quantity change
 const incrementQuantity = () => {
-  if (quantity.value < (product.value?.stock_quantity || 0)) {
+  if (quantity.value < currentStock.value) {
     quantity.value++
   }
 }
@@ -69,11 +136,24 @@ const decrementQuantity = () => {
 const handleAddToCart = async () => {
   if (!product.value || addingToCart.value) return
 
+  // Check if all variant options are selected
+  if (hasVariants.value && !allOptionsSelected.value) {
+    alert('Please select all product options')
+    return
+  }
+
   addingToCart.value = true
   addedQuantity.value = quantity.value
 
   try {
-    await cartStore.addToCart({ id: product.value.id }, quantity.value)
+    const cartItem = {
+      product_id: product.value.id,
+      product_variant_id: selectedVariant.value?.id || null,
+      variant_attributes: selectedVariant.value?.attributes || null,
+      quantity: quantity.value
+    }
+
+    await cartStore.addToCart(cartItem)
 
     // Show success message
     showSuccessMessage.value = true
@@ -203,7 +283,7 @@ const breadcrumb = computed(() => [
             <!-- Price -->
             <div class="flex items-baseline gap-3">
               <span class="text-5xl font-bold text-gray-900">
-                ${{ Number(product.price).toFixed(2) }}
+                ${{ Number(currentPrice).toFixed(2) }}
               </span>
             </div>
 
@@ -219,8 +299,43 @@ const breadcrumb = computed(() => [
                 'font-medium',
                 inStock ? 'text-green-700' : 'text-red-700'
               ]">
-                {{ inStock ? `In Stock (${product.stock_quantity} available)` : 'Out of Stock' }}
+                {{ inStock ? `In Stock (${currentStock} available)` : 'Out of Stock' }}
               </span>
+            </div>
+
+            <!-- Variant Selectors -->
+            <div v-if="hasVariants" class="space-y-4 border-t border-gray-200 pt-6">
+              <div v-for="option in availableOptions" :key="option.name" class="space-y-3">
+                <label class="text-sm font-semibold text-gray-700">
+                  {{ option.name }}
+                  <span v-if="!selectedOptions[option.name]" class="text-red-500">*</span>
+                </label>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="value in option.values"
+                    :key="value"
+                    @click="selectedOptions[option.name] = value"
+                    :class="[
+                      'px-4 py-2 rounded-lg font-medium transition-all border-2',
+                      selectedOptions[option.name] === value
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-emerald-600'
+                    ]"
+                  >
+                    {{ value }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Variant selection warning -->
+              <div v-if="!allOptionsSelected" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p class="text-sm text-yellow-800 flex items-center gap-2">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Please select all options to see availability and add to cart
+                </p>
+              </div>
             </div>
 
             <!-- Description -->
@@ -252,7 +367,7 @@ const breadcrumb = computed(() => [
             </div>
 
             <!-- Quantity Selector -->
-            <div v-if="inStock" class="space-y-3">
+            <div v-if="inStock && (!hasVariants || allOptionsSelected)" class="space-y-3">
               <label class="text-sm font-semibold text-gray-700">Quantity</label>
               <div class="flex items-center gap-4">
                 <div class="flex items-center gap-3 bg-gray-100 rounded-xl p-2">
@@ -268,7 +383,7 @@ const breadcrumb = computed(() => [
                   <span class="w-16 text-center font-bold text-xl text-gray-900">{{ quantity }}</span>
                   <button
                     @click="incrementQuantity"
-                    :disabled="quantity >= product.stock_quantity"
+                    :disabled="quantity >= currentStock"
                     class="w-10 h-10 flex items-center justify-center rounded-lg bg-white hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -277,7 +392,7 @@ const breadcrumb = computed(() => [
                   </button>
                 </div>
                 <span class="text-sm text-gray-500">
-                  {{ product.stock_quantity }} available
+                  {{ currentStock }} available
                 </span>
               </div>
             </div>

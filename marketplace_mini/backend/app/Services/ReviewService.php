@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Repositories\ReviewRepository;
-use Illuminate\Support\Facades\DB;
 
 class ReviewService
 {
@@ -24,7 +23,7 @@ class ReviewService
 
     public function createReview(int $userId, int $productId, int $rating, ?string $comment): array
     {
-        if (!$this->canUserReviewProduct($userId, $productId)) {
+        if (! $this->canUserReviewProduct($userId, $productId)) {
             return [
                 'success' => false,
                 'message' => 'You can only review products you have purchased and received.',

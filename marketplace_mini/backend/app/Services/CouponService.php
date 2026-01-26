@@ -16,7 +16,7 @@ class CouponService
     {
         $coupon = $this->couponRepository->findByCode($code);
 
-        if (!$coupon) {
+        if (! $coupon) {
             return [
                 'success' => false,
                 'message' => 'Invalid coupon code.',
@@ -104,7 +104,7 @@ class CouponService
         $sellerSubtotals = [];
         foreach ($cartItems as $item) {
             $product = $products->get($item['product_id']);
-            if (!$product) {
+            if (! $product) {
                 continue;
             }
 
@@ -112,7 +112,7 @@ class CouponService
             $quantity = $item['quantity'] ?? 1;
             $itemTotal = $product->price * $quantity;
 
-            if (!isset($sellerSubtotals[$sellerId])) {
+            if (! isset($sellerSubtotals[$sellerId])) {
                 $sellerSubtotals[$sellerId] = [
                     'subtotal' => 0,
                     'seller_name' => $product->seller->name ?? 'Unknown Seller',
@@ -141,7 +141,7 @@ class CouponService
                 // Calculate potential discount
                 $discountAmount = $this->calculateDiscount($coupon, $sellerSubtotal);
 
-                if (!isset($availableCoupons[$sellerId])) {
+                if (! isset($availableCoupons[$sellerId])) {
                     $availableCoupons[$sellerId] = [
                         'seller_id' => $sellerId,
                         'seller_name' => $sellerSubtotals[$sellerId]['seller_name'],
@@ -195,7 +195,7 @@ class CouponService
     {
         $coupon = $this->couponRepository->findBySeller($sellerId, $couponId);
 
-        if (!$coupon) {
+        if (! $coupon) {
             return [
                 'success' => false,
                 'message' => 'Coupon not found or does not belong to you.',

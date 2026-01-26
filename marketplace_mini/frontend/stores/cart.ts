@@ -13,6 +13,8 @@ interface CartProduct {
 interface CartItem {
   id: number
   product_id: number
+  product_variant_id?: number | null
+  variant_attributes?: Record<string, string> | null
   quantity: number
   product: CartProduct
 }
@@ -110,10 +112,17 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   /**
-   * Add product to cart
+   * Add product to cart (supports variants)
    * CRITICAL: Redirects to login if not authenticated
    */
-  async function addToCart(product: { id: number }, quantity: number = 1) {
+  async function addToCart(
+    cartItem: {
+      product_id: number
+      product_variant_id?: number | null
+      variant_attributes?: Record<string, string> | null
+      quantity: number
+    }
+  ) {
     // Check authentication first
     if (!authStore.isAuthenticated) {
       // Redirect to login page
@@ -131,8 +140,10 @@ export const useCartStore = defineStore('cart', () => {
           Authorization: `Bearer ${authStore.token}`,
         },
         body: {
-          product_id: product.id,
-          quantity,
+          product_id: cartItem.product_id,
+          product_variant_id: cartItem.product_variant_id || null,
+          variant_attributes: cartItem.variant_attributes || null,
+          quantity: cartItem.quantity,
         },
       })
 

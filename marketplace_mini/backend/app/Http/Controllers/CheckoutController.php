@@ -33,7 +33,7 @@ class CheckoutController extends Controller
 
             // Get user's cart
             $cart = Cart::where('user_id', $user->id)
-                ->with(['cartItems.product'])
+                ->with(['cartItems.product', 'cartItems.productVariant'])
                 ->first();
 
             if (! $cart || $cart->cartItems->isEmpty()) {
@@ -46,7 +46,12 @@ class CheckoutController extends Controller
             // Calculate subtotal from cart items
             $subtotal = 0;
             foreach ($cart->cartItems as $cartItem) {
-                $subtotal += $cartItem->product->price * $cartItem->quantity;
+                // Use variant price if available, otherwise use product price
+                $price = $cartItem->product_variant_id && $cartItem->productVariant
+                    ? $cartItem->productVariant->price
+                    : $cartItem->product->price;
+
+                $subtotal += $price * $cartItem->quantity;
             }
 
             // Handle multiple coupons (one per seller)
@@ -97,7 +102,11 @@ class CheckoutController extends Controller
                     foreach ($cart->cartItems as $cartItem) {
                         $product = $products->get($cartItem->product_id);
                         if ($product && $product->seller_id == $coupon->seller_id) {
-                            $sellerSubtotal += $product->price * $cartItem->quantity;
+                            $price = $cartItem->product_variant_id && $cartItem->productVariant
+                                ? $cartItem->productVariant->price
+                                : $product->price;
+
+                            $sellerSubtotal += $price * $cartItem->quantity;
                         }
                     }
 
@@ -237,7 +246,7 @@ class CheckoutController extends Controller
 
             // Get user's cart
             $cart = Cart::where('user_id', $user->id)
-                ->with(['cartItems.product'])
+                ->with(['cartItems.product', 'cartItems.productVariant'])
                 ->first();
 
             if (! $cart || $cart->cartItems->isEmpty()) {
@@ -259,7 +268,13 @@ class CheckoutController extends Controller
                     if (! $cartItem->product) {
                         throw new \Exception("Product not found for cart item ID: {$cartItem->id}");
                     }
-                    $subtotal += $cartItem->product->price * $cartItem->quantity;
+
+                    // Use variant price if available, otherwise use product price
+                    $price = $cartItem->product_variant_id && $cartItem->productVariant
+                        ? $cartItem->productVariant->price
+                        : $cartItem->product->price;
+
+                    $subtotal += $price * $cartItem->quantity;
                 }
 
                 // Get coupon data from PaymentIntent metadata
@@ -313,30 +328,46 @@ class CheckoutController extends Controller
                 // Move cart items to order items and decrement stock
                 foreach ($cart->cartItems as $cartItem) {
                     $product = $cartItem->product;
+                    $variant = $cartItem->productVariant;
+
+                    // Determine price and stock source
+                    $priceAtPurchase = $product->price;
+                    $stockSource = $product;
+                    $stockField = 'product';
+
+                    if ($cartItem->product_variant_id && $variant) {
+                        $priceAtPurchase = $variant->price;
+                        $stockSource = $variant;
+                        $stockField = 'variant';
+                    }
 
                     // Safety check: Ensure sufficient stock
-                    if ($product->stock_quantity < $cartItem->quantity) {
+                    if ($stockSource->stock_quantity < $cartItem->quantity) {
                         throw new \Exception(
-                            "Insufficient stock for product '{$product->name}'. Available: {$product->stock_quantity}, Requested: {$cartItem->quantity}"
+                            "Insufficient stock for product '{$product->name}'. Available: {$stockSource->stock_quantity}, Requested: {$cartItem->quantity}"
                         );
                     }
 
-                    // Decrement product stock
-                    $product->decrement('stock_quantity', $cartItem->quantity);
+                    // Decrement stock (variant or product)
+                    $stockSource->decrement('stock_quantity', $cartItem->quantity);
 
                     Log::info('Stock decremented', [
                         'product_id' => $product->id,
                         'product_name' => $product->name,
+                        'variant_id' => $variant?->id,
+                        'stock_field' => $stockField,
                         'quantity_sold' => $cartItem->quantity,
-                        'remaining_stock' => $product->fresh()->stock_quantity,
+                        'remaining_stock' => $stockSource->fresh()->stock_quantity,
                     ]);
 
                     OrderItem::create([
                         'order_id' => $order->id,
                         'product_id' => $cartItem->product_id,
+                        'product_variant_id' => $cartItem->product_variant_id,
+                        'variant_attributes' => $cartItem->variant_attributes,
                         'product_name' => $product->name,
                         'quantity' => $cartItem->quantity,
-                        'price_at_purchase' => $product->price,
+                        'price_at_purchase' => $priceAtPurchase,
                     ]);
                 }
 

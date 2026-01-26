@@ -54,6 +54,10 @@ export interface Product {
   price: number
   stock_quantity: number
   image_url?: string
+  options?: Record<string, string[]>
+  has_variants: boolean
+  average_rating?: number
+  review_count?: number
   created_at?: string
   updated_at?: string
   // Relationships

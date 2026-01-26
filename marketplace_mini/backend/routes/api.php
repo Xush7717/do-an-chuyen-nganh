@@ -12,6 +12,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller\CouponController as SellerCouponController;
 use App\Http\Controllers\Seller\OrderController as SellerOrderController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\Seller\VariantTemplateController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -74,6 +75,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 Route::prefix('seller')->middleware(['auth:sanctum', 'seller'])->group(function () {
     Route::get('/stats', [SellerOrderController::class, 'stats']);
     Route::apiResource('products', SellerProductController::class);
+    Route::apiResource('variant-templates', VariantTemplateController::class);
     Route::get('/orders', [SellerOrderController::class, 'index']);
     Route::get('/orders/{id}', [SellerOrderController::class, 'show']);
     Route::patch('/orders/{id}/status', [SellerOrderController::class, 'updateStatus']);

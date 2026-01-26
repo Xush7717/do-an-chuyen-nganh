@@ -20,10 +20,14 @@ class Product extends Model
         'price',
         'stock_quantity',
         'image_url',
+        'options',
+        'has_variants',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'options' => 'array',
+        'has_variants' => 'boolean',
     ];
 
     protected $appends = [
@@ -80,6 +84,11 @@ class Product extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class);
     }
 
     public function getAverageRatingAttribute(): float

@@ -41,7 +41,7 @@ class CouponController extends Controller
 
         $result = $this->couponService->createCoupon($request->user()->id, $validated);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'message' => $result['message'],
             ], 422);
@@ -57,7 +57,7 @@ class CouponController extends Controller
     {
         $result = $this->couponService->deleteCoupon($request->user()->id, $id);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'message' => $result['message'],
             ], 404);

@@ -39,9 +39,10 @@ class ReviewController extends Controller
             $validated['comment'] ?? null
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             // Return 422 for duplicate reviews, 403 for unauthorized
             $statusCode = str_contains($result['message'], 'already reviewed') ? 422 : 403;
+
             return response()->json([
                 'message' => $result['message'],
             ], $statusCode);
@@ -69,12 +70,12 @@ class ReviewController extends Controller
                 'user_id' => $request->user()->id,
                 'product_id' => $productId,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'can_review' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

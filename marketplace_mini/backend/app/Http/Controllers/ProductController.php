@@ -21,7 +21,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Product::query()
-            ->with(['seller.seller', 'category']);
+            ->with(['seller.seller', 'category', 'variants']);
 
         // Search filter (name or description)
         if ($request->has('search')) {
@@ -29,9 +29,9 @@ class ProductController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
-                    //orWhereHas cho bang ben ngoaiorWhereHas('seller', function ($q_seller) use ($search) {
-                    // Giả sử cột tên người bán trong database là 'name'
-                    //$q_seller->where('name', 'like', "%{$search}%");
+                // orWhereHas cho bang ben ngoaiorWhereHas('seller', function ($q_seller) use ($search) {
+                // Giả sử cột tên người bán trong database là 'name'
+                // $q_seller->where('name', 'like', "%{$search}%");
             });
         }
 
@@ -76,7 +76,7 @@ class ProductController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $product = Product::with(['seller.seller', 'category'])
+        $product = Product::with(['seller.seller', 'category', 'variants', 'reviews.user'])
             ->findOrFail($id);
 
         return response()->json([
